@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+// swift-tools-version:5.4
 //  Package.swift
 //  Perfect-MySQL
 //
@@ -19,23 +19,20 @@
 
 import PackageDescription
 
-#if os(macOS)
-let clientPackage = "Perfect-mysqlclient"
-#else
-let clientPackage = "Perfect-mysqlclient-Linux"
-#endif
-
 let package = Package(
 	name: "PerfectMySQL",
 	products: [
 		.library(name: "PerfectMySQL", targets: ["PerfectMySQL"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/PerfectlySoft/Perfect-CRUD.git", from: "1.2.2"),
-		.package(url: "https://github.com/PerfectlySoft/\(clientPackage).git", from: "2.0.0"),
+		.package(url: "https://github.com/RockfordWei/Perfect.git", from: "5.6.13")
 		],
 	targets: [
-		.target(name: "PerfectMySQL", dependencies: ["PerfectCRUD"]),
+        .systemLibrary(name: "mysqlclient", pkgConfig: "mysqlclient",     providers: [
+            .apt(["libmysqlclient-dev"]),
+            .brew(["mysqlclient"])
+        ]),
+		.target(name: "PerfectMySQL", dependencies: ["mysqlclient", .product(name: "PerfectCRUD", package: "Perfect")]),
 		.testTarget(name: "PerfectMySQLTests", dependencies: ["PerfectMySQL"])
 	]
 )

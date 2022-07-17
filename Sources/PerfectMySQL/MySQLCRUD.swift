@@ -134,7 +134,7 @@ class MySQLCRUDRowReader<K : CodingKey>: KeyedDecodingContainerProtocol {
 			return ret as! T
 		case .data:
 			let bytes: [UInt8] = (val as? [UInt8]) ?? []
-			return Data(bytes: bytes) as! T
+			return Data(bytes) as! T
 		case .uuid:
 			guard let str = val as? String, let uuid = UUID(uuidString: str) else {
 				throw CRUDDecoderError("Invalid UUID string \(String(describing: val)).")
@@ -155,7 +155,10 @@ class MySQLCRUDRowReader<K : CodingKey>: KeyedDecodingContainerProtocol {
 				throw CRUDDecoderError("Unsupported type: \(type) for key: \(key.stringValue)")
 			}
 			return try JSONDecoder().decode(type, from: data)
-		}
+        case .wrapped:
+            let decoder = CRUDColumnValueDecoder(source: KeyedDecodingContainer(self), key: key)
+                        return try T(from: decoder)
+        }
 	}
 	func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
 		throw CRUDDecoderError("Unimplimented nestedContainer")
@@ -339,7 +342,9 @@ class MySQLGenDelegate: SQLGenDelegate {
 				typeName = "longtext"
 			case .codable:
 				typeName = "json"
-			}
+            case .wrapped:
+                throw MySQLCRUDError("Unsupported SQL column type \(type)")
+            }
 		}
 		let addendum: String
 		if column.properties.contains(.primaryKey) {
@@ -356,6 +361,10 @@ class MySQLGenDelegate: SQLGenDelegate {
 typealias MySQLColumnMap = [String:Int]
 
 struct MySQLDirectExeDelegate: SQLExeDelegate {
+    func asyncExecute(completion: @escaping (SQLExeDelegate) -> ()) {
+        completion(self)
+    }
+
 	let connection: MySQL
 	let sql: String
 	func bind(_ bindings: Bindings, skip: Int) throws {
@@ -375,6 +384,10 @@ struct MySQLDirectExeDelegate: SQLExeDelegate {
 }
 
 class MySQLStmtExeDelegate: SQLExeDelegate {
+    func asyncExecute(completion: @escaping (SQLExeDelegate) -> ()) {
+        completion(self)
+    }
+
 	let connection: MySQL
 	let statement: MySQLStmt
 	var results: MySQLStmt.Results?
