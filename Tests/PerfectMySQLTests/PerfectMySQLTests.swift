@@ -22,7 +22,11 @@ import XCTest
 import PerfectCRUD
 
 let testDBRowCount = 5
+#if os(macOS)
 let testHost = "127.0.0.1"
+#else
+let testHost = "host.docker.internal"
+#endif
 let testUser = "root"
 let testPassword = "secret"
 let testDB = "test"
