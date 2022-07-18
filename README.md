@@ -107,14 +107,14 @@ For more information, please visit [perfect.org](http://www.perfect.org/docs/MyS
 import PackageDescription
 
 let package = Package(
-    name: "frc",
+    name: "DemoApp",
     dependencies: [
         .package(url: "https://github.com/RockfordWei/Perfect.git", from: "5.6.13"),
-        .package(url: "https://github.com/RockfordWei/Perfect-MySQL.git", from: "5.6.1"),
+        .package(url: "https://github.com/RockfordWei/Perfect-MySQL.git", from: "5.6.3"),
     ],
     targets: [
         .executableTarget(
-            name: "frc",
+            name: "DemoApp",
             dependencies: [
                 .product(name: "PerfectLib", package: "Perfect"),
                 .product(name: "PerfectMySQL", package: "Perfect-MySQL")
