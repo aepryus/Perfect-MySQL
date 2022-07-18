@@ -17,9 +17,9 @@ public struct MySQLCRUDError: Error, CustomStringConvertible {
 }
 
 // maps column name to position which must be computed once before row reading action
-typealias MySQLCRUDColumnMap = [String:Int]
+typealias MySQLCRUDColumnMap = [String: Int]
 
-class MySQLCRUDRowReader<K : CodingKey>: KeyedDecodingContainerProtocol {
+class MySQLCRUDRowReader<K: CodingKey>: KeyedDecodingContainerProtocol {
 	typealias Key = K
 	var codingPath: [CodingKey] = []
 	var allKeys: [Key] = []
@@ -120,11 +120,12 @@ class MySQLCRUDRowReader<K : CodingKey>: KeyedDecodingContainerProtocol {
 	func decode(_ type: String.Type, forKey key: Key) throws -> String {
 		return (column(key) as? String) ?? ""
 	}
-	func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
+	func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T: Decodable {
 		guard let special = SpecialType(type) else {
 			throw CRUDDecoderError("Unsupported type: \(type) for key: \(key.stringValue)")
 		}
 		let val = column(key)
+		// swiftlint:disable switch_case_alignment
 		switch special {
 		case .uint8Array:
 			let ret: [UInt8] = (val as? [UInt8]) ?? []
@@ -157,10 +158,10 @@ class MySQLCRUDRowReader<K : CodingKey>: KeyedDecodingContainerProtocol {
 			return try JSONDecoder().decode(type, from: data)
         case .wrapped:
             let decoder = CRUDColumnValueDecoder(source: KeyedDecodingContainer(self), key: key)
-                        return try T(from: decoder)
+			return try T(from: decoder)
         }
 	}
-	func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
+	func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type, forKey key: Key) throws -> KeyedDecodingContainer<NestedKey> where NestedKey: CodingKey {
 		throw CRUDDecoderError("Unimplimented nestedContainer")
 	}
 	func nestedUnkeyedContainer(forKey key: Key) throws -> UnkeyedDecodingContainer {
@@ -182,7 +183,7 @@ struct MySQLColumnInfo: Codable {
 	let type: String
 	private let null: String
 	private let key: String
-	
+
 	var isNull: Bool {
 		return null == "YES"
 	}
@@ -195,24 +196,24 @@ class MySQLGenDelegate: SQLGenDelegate {
 	let database: MySQL
 	var parentTableStack: [TableStructure] = []
 	var bindings: Bindings = []
-	
+
 	init(connection db: MySQL) {
 		database = db
 	}
-	
+
 	func getEmptyInsertSnippet() -> String {
 		return "() VALUES ()"
 	}
-	
+
 	func getBinding(for expr: Expression) throws -> String {
 		bindings.append(("?", expr))
 		return "?"
 	}
-	
+
 	func quote(identifier: String) throws -> String {
 		return "`\(identifier)`"
 	}
-	
+
 	func getCreateTableSQL(forTable: TableStructure, policy: TableCreatePolicy) throws -> [String] {
 		parentTableStack.append(forTable)
 		defer {
@@ -230,12 +231,12 @@ class MySQLGenDelegate: SQLGenDelegate {
 		if !policy.contains(.dropTable),
 			policy.contains(.reconcileTable),
 			let existingColumns = getExistingColumnData(forTable: forTable.tableName) {
-			let existingColumnMap: [String:MySQLColumnInfo] = .init(uniqueKeysWithValues: existingColumns.map { ($0.field, $0) })
-			let newColumnMap: [String:TableStructure.Column] = .init(uniqueKeysWithValues: forTable.columns.map { ($0.name.lowercased(), $0) })
-			
+			let existingColumnMap: [String: MySQLColumnInfo] = .init(uniqueKeysWithValues: existingColumns.map { ($0.field, $0) })
+			let newColumnMap: [String: TableStructure.Column] = .init(uniqueKeysWithValues: forTable.columns.map { ($0.name.lowercased(), $0) })
+
 			let addColumns = newColumnMap.keys.filter { existingColumnMap[$0] == nil }
 			let removeColumns: [String] = existingColumnMap.keys.filter { newColumnMap[$0] == nil }
-			
+
 			sub += try removeColumns.map {
 				return """
 				ALTER TABLE \(try quote(identifier: forTable.tableName)) DROP COLUMN \(try quote(identifier: $0))
@@ -258,7 +259,8 @@ class MySQLGenDelegate: SQLGenDelegate {
 		}
 		return sub
 	}
-	
+
+	// swiftlint:disable opening_brace
 	func getCreateIndexSQL(forTable name: String, on columns: [String], unique: Bool) throws -> [String] {
 		let stat =
 		"""
@@ -267,7 +269,7 @@ class MySQLGenDelegate: SQLGenDelegate {
 		"""
 		return [stat]
 	}
-	
+
 	func getExistingColumnData(forTable: String) -> [MySQLColumnInfo]? {
 		do {
 			let statement = "SHOW COLUMNS FROM \(try quote(identifier: forTable))"
@@ -289,7 +291,7 @@ class MySQLGenDelegate: SQLGenDelegate {
 			return nil
 		}
 	}
-	
+
 	func getColumnDefinition(_ column: TableStructure.Column) throws -> String {
 		let name = column.name
 		let type = column.type
@@ -327,6 +329,7 @@ class MySQLGenDelegate: SQLGenDelegate {
 			guard let special = SpecialType(type) else {
 				throw MySQLCRUDError("Unsupported SQL column type \(type)")
 			}
+			// swiftlint:disable switch_case_alignment
 			switch special {
 			case .uint8Array:
 				typeName = "longblob"
@@ -358,7 +361,7 @@ class MySQLGenDelegate: SQLGenDelegate {
 	}
 }
 
-typealias MySQLColumnMap = [String:Int]
+typealias MySQLColumnMap = [String: Int]
 
 struct MySQLDirectExeDelegate: SQLExeDelegate {
     func asyncExecute(completion: @escaping (SQLExeDelegate) -> ()) {
@@ -378,7 +381,7 @@ struct MySQLDirectExeDelegate: SQLExeDelegate {
 		}
 		return false
 	}
-	func next<A>() throws -> KeyedDecodingContainer<A>? where A : CodingKey {
+	func next<A>() throws -> KeyedDecodingContainer<A>? where A: CodingKey {
 		return nil
 	}
 }
@@ -403,14 +406,14 @@ class MySQLStmtExeDelegate: SQLExeDelegate {
 		}
 		columnMap = m
 	}
-	
+
 	func bind(_ bindings: Bindings, skip: Int) throws {
 		try bindings[skip...].forEach {
 			let (_, expr) = $0
 			try bindOne(expr: expr)
 		}
 	}
-	
+
 	func hasNext() throws -> Bool {
 		if nil == results {
 			guard statement.execute() else {
@@ -425,8 +428,8 @@ class MySQLStmtExeDelegate: SQLExeDelegate {
 		results = nil
 		return false
 	}
-	
-	func next<A>() throws -> KeyedDecodingContainer<A>? where A : CodingKey {
+
+	func next<A>() throws -> KeyedDecodingContainer<A>? where A: CodingKey {
 		guard let row = results?.currentRow() else {
 			return nil
 		}
@@ -435,7 +438,7 @@ class MySQLStmtExeDelegate: SQLExeDelegate {
 															columns: columnMap,
 															row: row))
 	}
-	
+
 	private func bindOne(expr: CRUDExpression) throws {
 		switch expr {
 		case .lazy(let e):
@@ -492,7 +495,7 @@ class MySQLStmtExeDelegate: SQLExeDelegate {
 
 public struct MySQLDatabaseConfiguration: DatabaseConfigurationProtocol {
 	let connection: MySQL
-	
+
 	public init(url: String?,
 				name: String?,
 				host: String?,
@@ -504,7 +507,7 @@ public struct MySQLDatabaseConfiguration: DatabaseConfigurationProtocol {
 		}
 		try self.init(database: database, host: host, port: port, username: user, password: pass)
 	}
-	
+
 	public init(database: String,
 				host: String,
 				port: Int? = nil,
@@ -522,7 +525,7 @@ public struct MySQLDatabaseConfiguration: DatabaseConfigurationProtocol {
 	public var sqlGenDelegate: SQLGenDelegate {
 		return MySQLGenDelegate(connection: connection)
 	}
-	
+
 	public func sqlExeDelegate(forSQL: String) throws -> SQLExeDelegate {
 		let noPrepCommands = ["CREATE", "DROP", "ALTER", "BEGIN", "COMMIT", "ROLLBACK"]
 		if nil != noPrepCommands.first(where: { forSQL.hasPrefix($0) }) {
@@ -545,7 +548,7 @@ extension Date {
 		let ret = dateFormatter.string(from: self)
 		return ret
 	}
-	
+
 	init?(fromMysqlFormatted string: String) {
 		let dateFormatter = DateFormatter()
 		dateFormatter.locale = Locale(identifier: "en_US_POSIX")

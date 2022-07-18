@@ -5,7 +5,7 @@
 //  Created by Kyle Jessup on 2015-10-20.
 //  Copyright © 2015 PerfectlySoft. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 // This source file is part of the Perfect.org open source project
 //
@@ -14,7 +14,7 @@
 //
 // See http://perfect.org/licensing.html for license information
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 
 import XCTest
@@ -55,7 +55,7 @@ var rawMySQL: MySQL {
 	_ = mysql.selectDatabase(named: testDB)
 	return mysql
 }
-
+// swiftlint:disable type_body_length
 class PerfectMySQLTests: XCTestCase {
 	override func setUp() {
 		super.setUp()
@@ -64,48 +64,48 @@ class PerfectMySQLTests: XCTestCase {
 		CRUDLogging.flush()
 		super.tearDown()
 	}
-	
+
 	func testConnect() {
-		
+
 		let mysql = MySQL()
-		
+
 		XCTAssert(mysql.setOption(.MYSQL_OPT_RECONNECT, true) == true)
 		XCTAssert(mysql.setOption(.MYSQL_OPT_LOCAL_INFILE) == true)
 		XCTAssert(mysql.setOption(.MYSQL_OPT_CONNECT_TIMEOUT, 5) == true)
-		
+
 		let res = mysql.connect(host: testHost, user: testUser, password: testPassword)
-		
+
 		XCTAssert(res)
-		
+
 		if !res {
 			print(mysql.errorMessage())
 			return
 		}
-		
+
 		var sres = mysql.selectDatabase(named: testDB)
 		if sres == false {
 			sres = mysql.query(statement: "CREATE DATABASE `\(testDB)` DEFAULT CHARACTER SET utf8mb4 ;")
 		}
-		
+
 		XCTAssert(sres == true)
-		
+
 		if !sres {
 			print(mysql.errorMessage())
 		}
 	}
-	
+
 	func testListDbs1() {
 		let mysql = rawMySQL
 		let list = mysql.listDatabases()
 		XCTAssert(list.count > 0)
 	}
-	
+
 	func testListDbs2() {
 		let mysql = rawMySQL
 		let list = mysql.listDatabases(wildcard: "information_%")
 		XCTAssert(list.count > 0)
 	}
-	
+
 	func testListTables1() {
 		let mysql = rawMySQL
 		let sres = mysql.selectDatabase(named: "information_schema")
@@ -113,7 +113,7 @@ class PerfectMySQLTests: XCTestCase {
 		let list = mysql.listTables()
 		XCTAssert(list.count > 0)
 	}
-	
+
 	func testListTables2() {
 		let mysql = rawMySQL
 		let sres = mysql.selectDatabase(named: "information_schema")
@@ -121,7 +121,7 @@ class PerfectMySQLTests: XCTestCase {
 		let list = mysql.listTables(wildcard: "INNODB_%")
 		XCTAssert(list.count > 0)
 	}
-	
+
 	func testQuery1() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS test"), mysql.errorMessage())
@@ -140,106 +140,106 @@ class PerfectMySQLTests: XCTestCase {
 			return
 		}
 		XCTAssert(results.numRows() == 10)
-		
+
 		var count = 0
 		while let _ = results.next() {
 			count += 1
 		}
 		XCTAssert(count == 10)
-		
+
 		let qres2 = mysql.query(statement: "DROP TABLE test")
 		XCTAssert(qres2 == true, mysql.errorMessage())
-		
+
 		let list2 = mysql.listTables(wildcard: "test")
 		XCTAssert(list2.count == 0)
 	}
-	
+
 	func testQuery2() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS test"))
-		
+
 		let qres = mysql.query(statement: "CREATE TABLE test (id INT, d DOUBLE, s VARCHAR(1024))")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let list = mysql.listTables(wildcard: "test")
 		XCTAssert(list.count > 0)
-		
+
 		for i in 1...10 {
 			let ires = mysql.query(statement: "INSERT INTO test (id,d,s) VALUES (\(i),42.9,\"Row \(i)\")")
 			XCTAssert(ires == true, mysql.errorMessage())
 		}
-		
+
 		let sres2 = mysql.query(statement: "SELECT id,d,s FROM test")
 		XCTAssert(sres2 == true, mysql.errorMessage())
-		
+
 		guard let results = mysql.storeResults() else {
 			XCTAssert(false, "mysql.storeResults() failed")
 			return
 		}
 		XCTAssert(results.numRows() == 10)
-		
+
 		var count = 0
-		results.forEachRow { a in
+		results.forEachRow { _ in
 			count += 1
 		}
 		XCTAssert(count == 10)
-		
+
 		let qres2 = mysql.query(statement: "DROP TABLE test")
 		XCTAssert(qres2 == true, mysql.errorMessage())
-		
+
 		let list2 = mysql.listTables(wildcard: "test")
 		XCTAssert(list2.count == 0)
 	}
-	
+
 	func testInsertNull() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS test"))
-		
+
 		let qres = mysql.query(statement: "CREATE TABLE test (id INT, d DOUBLE, s VARCHAR(1024))")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let list = mysql.listTables(wildcard: "test")
 		XCTAssert(list.count > 0)
-		
+
 		let ires = mysql.query(statement: "INSERT INTO test (id,d,s) VALUES (1,NULL,\"Row 1\")")
 		XCTAssert(ires == true, mysql.errorMessage())
-		
+
 		let sres2 = mysql.query(statement: "SELECT id,d,s FROM test")
 		XCTAssert(sres2 == true, mysql.errorMessage())
-		
+
 		guard let results = mysql.storeResults() else {
 			XCTAssert(false, "mysql.storeResults() failed")
 			return
 		}
 		XCTAssert(results.numRows() == 1)
 		XCTAssert(results.numFields() == 3)
-		
+
 		results.forEachRow { row in
 			XCTAssert(row.count == 3)
 			XCTAssertEqual(row[0], "1")
 			XCTAssertNil(row[1])
 			XCTAssertEqual(row[2], "Row 1")
 		}
-		
+
 		let qres2 = mysql.query(statement: "DROP TABLE test")
 		XCTAssert(qres2 == true, mysql.errorMessage())
-		
+
 		let list2 = mysql.listTables(wildcard: "test")
 		XCTAssert(list2.count == 0)
 	}
-	
+
 	func testQueryStmt1() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS all_data_types"))
-		
+
 		let qres = mysql.query(statement: "CREATE TABLE `all_data_types` (`varchar` VARCHAR( 20 ),\n`tinyint` TINYINT,\n`text` TEXT,\n`date` DATE,\n`smallint` SMALLINT,\n`mediumint` MEDIUMINT,\n`int` INT,\n`bigint` BIGINT,\n`float` FLOAT( 10, 2 ),\n`double` DOUBLE,\n`decimal` DECIMAL( 10, 2 ),\n`datetime` DATETIME,\n`timestamp` TIMESTAMP,\n`time` TIME,\n`year` YEAR,\n`char` CHAR( 10 ),\n`tinyblob` TINYBLOB,\n`tinytext` TINYTEXT,\n`blob` BLOB,\n`mediumblob` MEDIUMBLOB,\n`mediumtext` MEDIUMTEXT,\n`longblob` LONGBLOB,\n`longtext` LONGTEXT,\n`enum` ENUM( '1', '2', '3' ),\n`set` SET( '1', '2', '3' ),\n`bool` BOOL,\n`binary` BINARY( 20 ),\n`varbinary` VARBINARY( 20 ) ) ENGINE = MYISAM")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let stmt1 = MySQLStmt(mysql)
 		let prepRes = stmt1.prepare(statement: "INSERT INTO all_data_types VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 		XCTAssert(prepRes, stmt1.errorMessage())
 		XCTAssert(stmt1.paramCount() == 28)
-		
+
 		stmt1.bindParam("varchar 20 string")
 		stmt1.bindParam(1)
 		stmt1.bindParam("text string")
@@ -256,43 +256,43 @@ class PerfectMySQLTests: XCTestCase {
 		stmt1.bindParam("03:14:07")
 		stmt1.bindParam("2015")
 		stmt1.bindParam("K")
-		
+
 		"BLOB DATA".withCString { p in
 			stmt1.bindParam(p, length: 9)
-			
+
 			stmt1.bindParam("tiny text string")
-			
+
 			stmt1.bindParam(p, length: 9)
 			stmt1.bindParam(p, length: 9)
-			
+
 			stmt1.bindParam("medium text string")
-			
+
 			stmt1.bindParam(p, length: 9)
-			
+
 			stmt1.bindParam("long text string")
 			stmt1.bindParam("1")
 			stmt1.bindParam("2")
 			stmt1.bindParam(1)
 			stmt1.bindParam(0)
 			stmt1.bindParam(1)
-			
+
 			let execRes = stmt1.execute()
 			XCTAssert(execRes, "\(stmt1.errorCode()) \(stmt1.errorMessage()) - \(mysql.errorCode()) \(mysql.errorMessage())")
 		}
 	}
-	
+
 	func testQueryStmt2() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS all_data_types"))
 		let qres = mysql.query(statement: "CREATE TABLE `all_data_types` (`varchar` VARCHAR( 22 ),\n`tinyint` TINYINT,\n`text` TEXT,\n`date` DATE,\n`smallint` SMALLINT,\n`mediumint` MEDIUMINT,\n`int` INT,\n`bigint` BIGINT,\n`ubigint` BIGINT UNSIGNED,\n`float` FLOAT( 10, 2 ),\n`double` DOUBLE,\n`decimal` DECIMAL( 10, 2 ),\n`datetime` DATETIME,\n`timestamp` TIMESTAMP,\n`time` TIME,\n`year` YEAR,\n`char` CHAR( 10 ),\n`tinyblob` TINYBLOB,\n`tinytext` TINYTEXT,\n`blob` BLOB,\n`mediumblob` MEDIUMBLOB,\n`mediumtext` MEDIUMTEXT,\n`longblob` LONGBLOB,\n`longtext` LONGTEXT,\n`enum` ENUM( '1', '2', '3' ),\n`set` SET( '1', '2', '3' ),\n`bool` BOOL,\n`binary` BINARY( 20 ),\n`varbinary` VARBINARY( 20 ) ) ENGINE = MYISAM")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		for _ in 1...2 {
 			let stmt1 = MySQLStmt(mysql)
 			let prepRes = stmt1.prepare(statement: "INSERT INTO all_data_types VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 			XCTAssert(prepRes, stmt1.errorMessage())
 			XCTAssert(stmt1.paramCount() == 29)
-			
+
 			stmt1.bindParam("varchar ’22’ string 👻")
 			stmt1.bindParam(1)
 			stmt1.bindParam("text string")
@@ -310,7 +310,7 @@ class PerfectMySQLTests: XCTestCase {
 			stmt1.bindParam("03:14:07")
 			stmt1.bindParam("2015")
 			stmt1.bindParam("K")
-			
+
 			"BLOB DATA".withCString { p in
 				stmt1.bindParam(p, length: 9)
 				stmt1.bindParam("tiny text string")
@@ -324,26 +324,24 @@ class PerfectMySQLTests: XCTestCase {
 				stmt1.bindParam(1)
 				stmt1.bindParam(1)
 				stmt1.bindParam(1)
-				
+
 				let execRes = stmt1.execute()
 				XCTAssert(execRes, "\(stmt1.errorCode()) \(stmt1.errorMessage()) - \(mysql.errorCode()) \(mysql.errorMessage())")
 			}
 		}
-		
+
 		do {
 			let stmt1 = MySQLStmt(mysql)
-			
+
 			let prepRes = stmt1.prepare(statement: "SELECT * FROM all_data_types")
 			XCTAssert(prepRes, stmt1.errorMessage())
-			
+
 			let execRes = stmt1.execute()
 			XCTAssert(execRes, stmt1.errorMessage())
-			
+
 			let results = stmt1.results()
-			
-			let ok = results.forEachRow {
-				e in
-				
+
+			let ok = results.forEachRow { e in
 				XCTAssertEqual(e[0] as? String, "varchar ’22’ string 👻")
 				XCTAssertEqual(e[1] as? Int8, 1)
 				XCTAssertEqual(e[2] as? String, "text string")
@@ -377,25 +375,25 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssert(ok, stmt1.errorMessage())
 		}
 	}
-	
+
 	func testServerVersion() {
 		let mysql = rawMySQL
 		let vers = mysql.serverVersion()
 		XCTAssert(vers >= 50627) // YMMV
 	}
-	
+
 	func testQueryInt() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		var qres = mysql.query(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(-1, 1, -2, 2, -3, 3, -4, 4, -5, 5)")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		qres =  mysql.query(statement: "SELECT * FROM int_test")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let results = mysql.storeResults()
 		if let results = results {
 			while let row = results.next() {
@@ -412,19 +410,19 @@ class PerfectMySQLTests: XCTestCase {
 			}
 		}
 	}
-	
+
 	func testQueryIntMin() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		var qres = mysql.query(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(-128, 0, -32768, 0, -8388608, 0, -2147483648, 0, -9223372036854775808, 0)")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		qres =  mysql.query(statement: "SELECT * FROM int_test")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let results = mysql.storeResults()
 		if let results = results {
 			while let row = results.next() {
@@ -441,19 +439,19 @@ class PerfectMySQLTests: XCTestCase {
 			}
 		}
 	}
-	
+
 	func testQueryIntMax() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		var qres = mysql.query(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(127, 255, 32767, 65535, 8388607, 16777215, 2147483647, 4294967295, 9223372036854775807, 18446744073709551615)")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		qres =  mysql.query(statement: "SELECT * FROM int_test")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let results = mysql.storeResults()
 		if let results = results {
 			while let row = results.next() {
@@ -470,19 +468,19 @@ class PerfectMySQLTests: XCTestCase {
 			}
 		}
 	}
-	
+
 	func testQueryDecimal() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS decimal_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE decimal_test (f FLOAT, fm FLOAT, d DOUBLE, dm DOUBLE, de DECIMAL(2,1), dem DECIMAL(2,1))"), mysql.errorMessage())
-		
+
 		var qres = mysql.query(statement: "INSERT INTO decimal_test (f, fm, d, dm, de, dem) VALUES "
 			+ "(1.1, -1.1, 2.2, -2.2, 3.3, -3.3)")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		qres =  mysql.query(statement: "SELECT * FROM decimal_test")
 		XCTAssert(qres == true, mysql.errorMessage())
-		
+
 		let results = mysql.storeResults()
 		if let results = results {
 			while let row = results.next() {
@@ -495,17 +493,17 @@ class PerfectMySQLTests: XCTestCase {
 			}
 		}
 	}
-	
+
 	func testStmtInt() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		let stmt = MySQLStmt(mysql)
 		var res = stmt.prepare(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.bindParam(-1)
 		stmt.bindParam(1)
 		stmt.bindParam(-2)
@@ -516,17 +514,17 @@ class PerfectMySQLTests: XCTestCase {
 		stmt.bindParam(4)
 		stmt.bindParam(-5)
 		stmt.bindParam(5)
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.reset()
 		res = stmt.prepare(statement: "SELECT * FROM int_test")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		let results = stmt.results()
 		XCTAssert(results.numRows == 1)
 		XCTAssert(results.forEachRow { row in
@@ -542,17 +540,17 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssertEqual(row[9] as? UInt64, 5)
 		})
 	}
-	
+
 	func testStmtIntMin() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		let stmt = MySQLStmt(mysql)
 		var res = stmt.prepare(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.bindParam(-128)
 		stmt.bindParam(0)
 		stmt.bindParam(-32768)
@@ -563,17 +561,17 @@ class PerfectMySQLTests: XCTestCase {
 		stmt.bindParam(0)
 		stmt.bindParam(-9223372036854775808)
 		stmt.bindParam(0)
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.reset()
 		res = stmt.prepare(statement: "SELECT * FROM int_test")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		let results = stmt.results()
 		XCTAssert(results.forEachRow { row in
 			XCTAssertEqual(row[0] as? Int8, -128)
@@ -588,17 +586,17 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssertEqual(row[9] as? UInt64, 0)
 		})
 	}
-	
+
 	func testStmtIntMax() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS int_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE int_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		let stmt = MySQLStmt(mysql)
 		var res = stmt.prepare(statement: "INSERT INTO int_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.bindParam(127)
 		stmt.bindParam(255)
 		stmt.bindParam(32767)
@@ -609,17 +607,17 @@ class PerfectMySQLTests: XCTestCase {
 		stmt.bindParam(4294967295)
 		stmt.bindParam(9223372036854775807)
 		stmt.bindParam(18446744073709551615 as UInt64)
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.reset()
 		res = stmt.prepare(statement: "SELECT * FROM int_test")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		let results = stmt.results()
 		XCTAssert(results.forEachRow { row in
 			XCTAssertEqual(row[0] as? Int8, 127)
@@ -634,34 +632,34 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssertEqual(row[9] as? UInt64, 18446744073709551615)
 		})
 	}
-	
+
 	func testStmtDecimal() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS decimal_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE decimal_test (f FLOAT, fm FLOAT, d DOUBLE, dm DOUBLE, de DECIMAL(2,1), dem DECIMAL(2,1))"), mysql.errorMessage())
-		
+
 		let stmt = MySQLStmt(mysql)
 		var res = stmt.prepare(statement: "INSERT INTO decimal_test (f, fm, d, dm, de, dem) VALUES "
 			+ "(?, ?, ?, ?, ?, ?)")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.bindParam(1.1)
 		stmt.bindParam(-1.1)
 		stmt.bindParam(2.2)
 		stmt.bindParam(-2.2)
 		stmt.bindParam(3.3)
 		stmt.bindParam(-3.3)
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.reset()
 		res = stmt.prepare(statement: "SELECT * FROM decimal_test")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		let results = stmt.results()
 		XCTAssert(results.forEachRow { row in
 			XCTAssertEqual(row[0] as? Float, 1.1)
@@ -672,17 +670,17 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssertEqual(row[5] as? String, "-3.3")
 		})
 	}
-	
+
 	func testStmtNull() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS null_test"), mysql.errorMessage())
 		XCTAssert(mysql.query(statement: "CREATE TABLE null_test (a TINYINT, au TINYINT UNSIGNED, b SMALLINT, bu SMALLINT UNSIGNED, c MEDIUMINT, cu MEDIUMINT UNSIGNED, d INT, du INT UNSIGNED, e BIGINT, eu BIGINT UNSIGNED)"), mysql.errorMessage())
-		
+
 		let stmt = MySQLStmt(mysql)
 		var res = stmt.prepare(statement: "INSERT INTO null_test (a, au, b, bu, c, cu, d, du, e, eu) VALUES "
 			+ "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.bindParam()
 		stmt.bindParam()
 		stmt.bindParam()
@@ -693,17 +691,17 @@ class PerfectMySQLTests: XCTestCase {
 		stmt.bindParam()
 		stmt.bindParam()
 		stmt.bindParam()
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		stmt.reset()
 		res = stmt.prepare(statement: "SELECT * FROM null_test")
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		res = stmt.execute()
 		XCTAssert(res == true, stmt.errorMessage())
-		
+
 		let results = stmt.results()
 		XCTAssert(results.numRows == 1)
 		XCTAssert(results.forEachRow { row in
@@ -719,7 +717,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTAssertNil(row[9])
 		})
 	}
-	
+
 	func testFieldInfo() {
 		let mysql = rawMySQL
 		XCTAssert(mysql.query(statement: "DROP TABLE IF EXISTS testdb"), mysql.errorMessage())
@@ -733,7 +731,7 @@ class PerfectMySQLTests: XCTestCase {
 			}
 		}
 	}
-	
+
 	// copy + paste from here into other CRUD driver projects
 	struct TestTable1: Codable, TableNameProvider {
 		enum CodingKeys: String, CodingKey {
@@ -760,7 +758,7 @@ class PerfectMySQLTests: XCTestCase {
 			self.subTables = subTables
 		}
 	}
-	
+
 	struct TestTable2: Codable {
 		let id: UUID
 		let parentId: Int
@@ -785,7 +783,7 @@ class PerfectMySQLTests: XCTestCase {
 			self.blob = blob
 		}
 	}
-	
+
 	func testCreate1() {
 		do {
 			let db = try getDB()
@@ -839,7 +837,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testCreate2() {
 		do {
 			let db = try getTestDB()
@@ -874,7 +872,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testCreate3() {
 		struct FakeTestTable1: Codable, TableNameProvider {
 			enum CodingKeys: String, CodingKey {
@@ -891,7 +889,7 @@ class PerfectMySQLTests: XCTestCase {
 		do {
 			let db = try getTestDB()
 			try db.create(TestTable1.self, policy: [.dropTable, .shallow])
-			
+
 			do {
 				let t1 = db.table(TestTable1.self)
 				let newOne = TestTable1(id: 2000, name: "New One", integer: 40)
@@ -911,7 +909,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func getTestDB() throws -> Database<DBConfiguration> {
 		do {
 			let db = try getDB()
@@ -919,8 +917,7 @@ class PerfectMySQLTests: XCTestCase {
 			try db.transaction {
 				() -> () in
 				try db.table(TestTable1.self)
-					.insert((1...testDBRowCount).map {
-						num -> TestTable1 in
+					.insert((1...testDBRowCount).map { num -> TestTable1 in
 						let n = UInt8(num)
 						let blob: [UInt8]? = (num % 2 != 0) ? nil : [UInt8](arrayLiteral: n+1, n+2, n+3, n+4, n+5)
 						return TestTable1(id: num,
@@ -933,10 +930,8 @@ class PerfectMySQLTests: XCTestCase {
 			try db.transaction {
 				() -> () in
 				try db.table(TestTable2.self)
-					.insert((1...testDBRowCount).flatMap {
-						parentId -> [TestTable2] in
-						return (1...testDBRowCount).map {
-							num -> TestTable2 in
+					.insert((1...testDBRowCount).flatMap { parentId -> [TestTable2] in
+						return (1...testDBRowCount).map { num -> TestTable2 in
 							let n = UInt8(num)
 							let blob: [UInt8]? = [UInt8](arrayLiteral: n+1, n+2, n+3, n+4, n+5)
 							return TestTable2(id: UUID(),
@@ -954,7 +949,7 @@ class PerfectMySQLTests: XCTestCase {
 		}
 		return try getDB(reset: false)
 	}
-	
+
 	func testSelectAll() {
 		do {
 			let db = try getTestDB()
@@ -966,7 +961,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectIn() {
 		do {
 			let db = try getTestDB()
@@ -977,7 +972,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectLikeString() {
 		do {
 			let db = try getTestDB()
@@ -992,7 +987,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectJoin() {
 		do {
 			let db = try getTestDB()
@@ -1001,7 +996,7 @@ class PerfectMySQLTests: XCTestCase {
 				.join(\.subTables, on: \.id, equals: \.parentId)
 				.order(by: \.id)
 				.where(\TestTable2.name == "me")
-			
+
 			let j2c = try j2.count()
 			let j2a = try j2.select().map{$0}
 			let j2ac = j2a.count
@@ -1014,7 +1009,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testInsert1() {
 		do {
 			let db = try getTestDB()
@@ -1030,7 +1025,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testInsert2() {
 		do {
 			let db = try getTestDB()
@@ -1046,7 +1041,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testInsert3() {
 		do {
 			let db = try getTestDB()
@@ -1064,7 +1059,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testUpdate() {
 		do {
 			let db = try getTestDB()
@@ -1088,7 +1083,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testDelete() {
 		do {
 			let db = try getTestDB()
@@ -1105,7 +1100,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectLimit() {
 		do {
 			let db = try getTestDB()
@@ -1115,7 +1110,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectLimitWhere() {
 		do {
 			let db = try getTestDB()
@@ -1126,7 +1121,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectOrderLimitWhere() {
 		do {
 			let db = try getTestDB()
@@ -1137,7 +1132,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testSelectWhereNULL() {
 		do {
 			let db = try getTestDB()
@@ -1151,7 +1146,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	// this is the general-overview example used in the readme
 	func testPersonThing() {
 		do {
@@ -1167,40 +1162,40 @@ class PerfectMySQLTests: XCTestCase {
 				let lastName: String
 				let phoneNumbers: [PhoneNumber]?
 			}
-			
+
 			// CRUD usage begins by creating a database connection.
 			// The inputs for connecting to a database will differ depending on your client library.
 			// Create a `Database` object by providing a configuration.
 			// All code would be identical regardless of the datasource type.
 			let db = try getTestDB()
-			
+
 			// Create the table if it hasn't been done already.
 			// Table creates are recursive by default, so "PhoneNumber" is also created here.
 			try db.create(Person.self, policy: .reconcileTable)
-			
+
 			// Get a reference to the tables we will be inserting data into.
 			let personTable = db.table(Person.self)
 			let numbersTable = db.table(PhoneNumber.self)
-			
+
 			// Add an index for personId, if it does not already exist.
 			try numbersTable.index(\.personId)
-			
+
 			// Insert some sample data.
 			do {
 				// Insert some sample data.
 				let owen = Person(id: UUID(), firstName: "Owen", lastName: "Lars", phoneNumbers: nil)
 				let beru = Person(id: UUID(), firstName: "Beru", lastName: "Lars", phoneNumbers: nil)
-				
+
 				// Insert the people
 				try personTable.insert([owen, beru])
-				
+
 				// Give them some phone numbers
 				try numbersTable.insert([
 					PhoneNumber(personId: owen.id, planetCode: 12, number: "555-555-1212"),
 					PhoneNumber(personId: owen.id, planetCode: 15, number: "555-555-2222"),
 					PhoneNumber(personId: beru.id, planetCode: 12, number: "555-555-1212")])
 			}
-			
+
 			// Perform a query.
 			// Let's find all people with the last name of Lars which have a phone number on planet 12.
 			let query = try personTable
@@ -1209,7 +1204,7 @@ class PerfectMySQLTests: XCTestCase {
 				.order(descending: \.planetCode)
 				.where(\Person.lastName == "Lars" && \PhoneNumber.planetCode == 12)
 				.select()
-			
+
 			// Loop through the results and print the names.
 			for user in query {
 				// We joined PhoneNumbers, so we should have values here.
@@ -1225,7 +1220,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testStandardJoin() {
 		do {
 			let db = try getTestDB()
@@ -1254,7 +1249,7 @@ class PerfectMySQLTests: XCTestCase {
 					  on: \.id,
 					  equals: \.parentId)
 				.where(\Parent.id == 1)
-			
+
 			guard let parent = try join.first() else {
 				return XCTFail("Failed to find parent id: 1")
 			}
@@ -1270,7 +1265,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testJunctionJoin() {
 		do {
 			struct Student: Codable {
@@ -1344,7 +1339,8 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
+	// swiftlint:disable type_name
 	func testSelfJoin() {
 		do {
 			struct Me: Codable {
@@ -1382,6 +1378,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
+	// swiftlint:disable type_name todo
     // TODO: this script can only run separately, i.e.,
     // swift test --filter testSelfJunctionJoin
 	func testSelfJunctionJoin() {
@@ -1425,6 +1422,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
+	// swiftlint:disable todo
     // TODO: this script can only run separately, i.e.,
     // swift test --filter testCodableProperty
 	func testCodableProperty() {
@@ -1449,7 +1447,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testBadDecoding() {
 		do {
 			struct Top: Codable, TableNameProvider {
@@ -1468,7 +1466,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("Should not have a valid object.")
 		} catch {}
 	}
-	
+
 	func testAllPrimTypes1() {
 		struct AllTypes: Codable {
 			let int: Int
@@ -1493,7 +1491,7 @@ class PerfectMySQLTests: XCTestCase {
 			try db.create(AllTypes.self, policy: .dropTable)
 			let model = AllTypes(int: 1, uint: 2, int64: 3, uint64: 4, int32: 5, uint32: 6, int16: 7, uint16: 8, int8: 9, uint8: 10, double: 11, float: 12, string: "13", bytes: [1, 4], ubytes: [1, 4], b: true)
 			try db.table(AllTypes.self).insert(model)
-			
+
 			guard let f = try db.table(AllTypes.self).where(\AllTypes.int == 1).first() else {
 				return XCTFail("Nil result.")
 			}
@@ -1521,7 +1519,7 @@ class PerfectMySQLTests: XCTestCase {
 			try db.create(AllTypes.self, policy: .dropTable)
 			let model = AllTypes(int: 1, uint: 2, int64: -3, uint64: 4, int32: nil, uint32: nil, int16: -7, uint16: 8, int8: nil, uint8: nil, double: -11, float: -12, string: "13", bytes: [1, 4], ubytes: nil, b: true)
 			try db.table(AllTypes.self).insert(model)
-			
+
 			guard let f = try db.table(AllTypes.self)
 				.where(\AllTypes.int == 1).first() else {
 					return XCTFail("Nil result.")
@@ -1546,7 +1544,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testAllPrimTypes2() {
 		struct AllTypes2: Codable {
 			func equals(rhs: AllTypes2) -> Bool {
@@ -1597,7 +1595,7 @@ class PerfectMySQLTests: XCTestCase {
 			let ubytes: [UInt8]?
 			let b: Bool?
 		}
-		
+
 		do {
 			let db = try getTestDB()
 			try db.create(AllTypes2.self, policy: .dropTable)
@@ -1696,7 +1694,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testBespokeSQL() {
 		do {
 			let db = try getTestDB()
@@ -1712,7 +1710,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testURL() {
 		do {
 			let db = try getTestDB()
@@ -1733,7 +1731,7 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testLastInsertId() {
 		do {
 			let db = try getTestDB()
@@ -1750,15 +1748,15 @@ class PerfectMySQLTests: XCTestCase {
 			let table = db.table(ReturningItem.self)
 			let id = try table
 				.insert(ReturningItem(id: 0, def: 0),
-						ignoreKeys: \ReturningItem.id)//, \ReturningItem.def)
+						ignoreKeys: \ReturningItem.id) // , \ReturningItem.def)
 				.lastInsertId()
 			XCTAssertEqual(id, 1)
-			
+
 		} catch {
 			XCTFail("\(error)")
 		}
 	}
-	
+
 	func testEmptyInsert() {
 		do {
 			let db = try getTestDB()
@@ -1773,13 +1771,13 @@ class PerfectMySQLTests: XCTestCase {
 			try db.sql("DROP TABLE IF EXISTS \(ReturningItem.CRUDTableName)")
 			try db.sql("CREATE TABLE \(ReturningItem.CRUDTableName) (id INT PRIMARY KEY AUTO_INCREMENT, def INT DEFAULT 42)")
 			let table = db.table(ReturningItem.self)
-			
+
 			let id = try table
 				.insert(ReturningItem(id: 0, def: 0),
 						ignoreKeys: \ReturningItem.id, \ReturningItem.def)
 				.lastInsertId()
 			XCTAssertEqual(id, 1)
-			
+
 		} catch {
 			XCTFail("\(error)")
 		}

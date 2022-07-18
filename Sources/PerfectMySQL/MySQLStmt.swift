@@ -18,12 +18,12 @@ public final class MySQLStmt {
 	private var paramBinds: UnsafeMutablePointer<MYSQL_BIND>?
 	private var paramBindsOffset = 0
 	var meta: UnsafeMutablePointer<MYSQL_RES>?
-	
+
 	/// initialize mysql statement structure
 	public init(_ mysql: MySQL) {
 		ptr = mysql_stmt_init(mysql.mysqlPtr)
 	}
-	
+
 	deinit {
 		clearBinds()
 		if let meta = self.meta {
@@ -31,7 +31,7 @@ public final class MySQLStmt {
 		}
 		mysql_stmt_close(ptr)
 	}
-	
+
 	public func fieldNames() -> [Int: String] {
 		let columnCount = Int(fieldCount())
 		guard columnCount > 0 else {
@@ -46,7 +46,7 @@ public final class MySQLStmt {
 		}
 		return fieldDictionary
 	}
-	
+
 	public enum FieldType {
 		case integer,
 		double,
@@ -55,12 +55,12 @@ public final class MySQLStmt {
 		date,
 		null
 	}
-	
+
 	public struct FieldInfo {
 		public let name: String
 		public let type: FieldType
 	}
-	
+
 	public func fieldInfo(index: Int) -> FieldInfo? {
 		let fieldCount = Int(self.fieldCount())
 		guard index < fieldCount else {
@@ -72,7 +72,7 @@ public final class MySQLStmt {
 		let f: MYSQL_FIELD = field.pointee
 		return FieldInfo(name: String(validatingUTF8: f.name) ?? "invalid field name", type: mysqlTypeToFieldType(field))
 	}
-	
+
 	func mysqlTypeToFieldType(_ field: UnsafeMutablePointer<MYSQL_FIELD>) -> FieldType {
 		switch field.pointee.type {
 		case MYSQL_TYPE_NULL:
@@ -108,21 +108,21 @@ public final class MySQLStmt {
 			return .string
 		}
 	}
-	
+
 	/// Possible status for fetch results
 	public enum FetchResult {
 		case OK, Error, NoData, DataTruncated
 	}
-	
+
 	@available(*, deprecated)
 	public func close() {}
-	
+
 	/// Resets the statement buffers in the server
 	public func reset() {
 		mysql_stmt_reset(ptr)
 		resetBinds()
 	}
-	
+
 	public func resetBinds() {
 		let count = paramBindsOffset
 		if let paramBinds = self.paramBinds, count > 0 {
@@ -159,7 +159,7 @@ public final class MySQLStmt {
 			paramBindsOffset = 0
 		}
 	}
-	
+
 	public func clearBinds() {
 		let count = paramBindsOffset
 		if count > 0, nil != paramBinds {
@@ -169,22 +169,22 @@ public final class MySQLStmt {
 			paramBindsOffset = 0
 		}
 	}
-	
+
 	/// Free the resources allocated to a statement handle
 	public func freeResult() {
 		mysql_stmt_free_result(ptr)
 	}
-	
+
 	/// Returns the error number for the last statement execution
 	public func errorCode() -> UInt32 {
 		return mysql_stmt_errno(ptr)
 	}
-	
+
 	/// Returns the error message for the last statement execution
 	public func errorMessage() -> String {
 		return String(validatingUTF8: mysql_stmt_error(ptr)) ?? ""
 	}
-	
+
 	/// Prepares an SQL statement string for execution
 	public func prepare(statement query: String) -> Bool {
 		let utf8Chars = query.utf8
@@ -206,7 +206,7 @@ public final class MySQLStmt {
 		}
 		return true
 	}
-	
+
 	/// Executes a prepared statement, binding parameters if needed
 	public func execute() -> Bool {
 		if paramBindsOffset > 0 {
@@ -223,12 +223,12 @@ public final class MySQLStmt {
 		let r = mysql_stmt_execute(ptr)
 		return r == 0
 	}
-	
+
 	/// returns current results
 	public func results() -> MySQLStmt.Results {
 		return Results(self)
 	}
-	
+
 	/// Fetches the next row of data from a result set and returns status
 	public func fetch() -> FetchResult {
 		let r = mysql_stmt_fetch(ptr)
@@ -245,50 +245,50 @@ public final class MySQLStmt {
 			return .Error
 		}
 	}
-	
+
 	/// Returns the row count from a buffered statement result set
 	public func numRows() -> UInt {
 		return UInt(mysql_stmt_num_rows(ptr))
 	}
-	
+
 	/// Returns the number of rows changed, deleted, or inserted by prepared UPDATE, DELETE, or INSERT statement
 	public func affectedRows() -> UInt {
 		return UInt(mysql_stmt_affected_rows(ptr))
 	}
-	
+
 	/// Returns the ID generated for an AUTO_INCREMENT column by a prepared statement
 	public func insertId() -> UInt {
 		return UInt(mysql_stmt_insert_id(ptr))
 	}
-	
+
 	/// Returns the number of result columns for the most recent statement
 	public func fieldCount() -> UInt {
 		return UInt(mysql_stmt_field_count(ptr))
 	}
-	
+
 	/// Returns/initiates the next result in a multiple-result execution
 	public func nextResult() -> Int {
 		let r = mysql_stmt_next_result(ptr)
 		return Int(r)
 	}
-	
+
 	/// Seeks to an arbitrary row number in a statement result set
 	public func dataSeek(offset: Int) {
 		mysql_stmt_data_seek(ptr, my_ulonglong(offset))
 	}
-	
+
 	/// Returns the number of parameters in a prepared statement
 	public func paramCount() -> Int {
 		let r = mysql_stmt_param_count(ptr)
 		return Int(r)
 	}
-	
+
 	private func allocated(_ a: [UInt8]) -> UnsafeMutableRawBufferPointer? {
 		let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: a.count, alignment: 0)
 		buffer.copyBytes(from: a)
 		return buffer
 	}
-	
+
 	private func allocated(_ a: [Int8]) -> UnsafeMutableRawBufferPointer? {
 		let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: a.count, alignment: 0)
         return a.withUnsafeBytes { buffered -> UnsafeMutableRawBufferPointer? in
@@ -299,12 +299,12 @@ public final class MySQLStmt {
             return buffer
         }
 	}
-	
+
 	private func allocated(_ s: String) -> UnsafeMutableRawBufferPointer? {
 		let utf8 = Array(s.utf8) + [0]
 		return allocated(utf8)
 	}
-	
+
 	private func allocated(_ b: UnsafePointer<Int8>, length: Int) -> UnsafeMutableRawBufferPointer? {
 		let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: length, alignment: 0)
 		if let p = buffer.baseAddress {
@@ -312,7 +312,7 @@ public final class MySQLStmt {
 		}
 		return buffer
 	}
-	
+
 	func bindParam(_ s: String, type: enum_field_types) {
 		guard let allocd = allocated(s) else {
 			return
@@ -322,10 +322,10 @@ public final class MySQLStmt {
 		paramBinds?[paramBindsOffset].length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
 		paramBinds?[paramBindsOffset].length.initialize(to: UInt(allocd.count-1))
 		paramBinds?[paramBindsOffset].buffer = allocd.baseAddress
-		
+
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Double parameter binding
 	public func bindParam(_ d: Double) {
 		paramBinds?[paramBindsOffset].buffer_type = MYSQL_TYPE_DOUBLE
@@ -333,10 +333,10 @@ public final class MySQLStmt {
 		let a = UnsafeMutablePointer<Double>.allocate(capacity: 1)
 		a.initialize(to: d)
 		paramBinds?[paramBindsOffset].buffer = UnsafeMutableRawPointer(a)
-		
+
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Float parameter binding
 	public func bindParam(_ d: Float) {
 		paramBinds?[paramBindsOffset].buffer_type = MYSQL_TYPE_FLOAT
@@ -344,10 +344,10 @@ public final class MySQLStmt {
 		let a = UnsafeMutablePointer<Float>.allocate(capacity: 1)
 		a.initialize(to: d)
 		paramBinds?[paramBindsOffset].buffer = UnsafeMutableRawPointer(a)
-		
+
 		paramBindsOffset += 1
 	}
-	
+
 	private func genBind<T>(type: enum_field_types, value: T) -> MYSQL_BIND {
 		var bind = MYSQL_BIND()
 		bind.buffer_type = type
@@ -357,7 +357,7 @@ public final class MySQLStmt {
 		bind.buffer = UnsafeMutableRawPointer(b)
 		return bind
 	}
-	
+
 	private func genBind<T: UnsignedInteger>(type: enum_field_types, value: T) -> MYSQL_BIND {
 		var bind = MYSQL_BIND()
 		bind.buffer_type = type
@@ -368,65 +368,65 @@ public final class MySQLStmt {
 		bind.buffer = UnsafeMutableRawPointer(b)
 		return bind
 	}
-	
+
 	/// create Int parameter binding
 	public func bindParam(_ i: Int) {
 		bindParam(Int64(i))
 	}
-	
+
 	/// create UInt parameter binding
 	public func bindParam(_ i: UInt) {
 		bindParam(UInt64(i))
 	}
-	
+
 	/// create Int64 parameter binding
 	public func bindParam(_ i: Int64) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_LONGLONG, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create UInt64 parameter binding
 	public func bindParam(_ i: UInt64) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_LONGLONG, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Int32 parameter binding
 	public func bindParam(_ i: Int32) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_LONG, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create UInt32 parameter binding
 	public func bindParam(_ i: UInt32) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_LONG, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Int16 parameter binding
 	public func bindParam(_ i: Int16) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_SHORT, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create UInt16 parameter binding
 	public func bindParam(_ i: UInt16) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_SHORT, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Int16 parameter binding
 	public func bindParam(_ i: Int8) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_TINY, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create UInt16 parameter binding
 	public func bindParam(_ i: UInt8) {
 		paramBinds?[paramBindsOffset] = genBind(type: MYSQL_TYPE_TINY, value: i)
 		paramBindsOffset += 1
 	}
-	
+
 	/// create String parameter binding
 	public func bindParam(_ s: String) {
 		guard let allocd = allocated(s) else {
@@ -437,10 +437,10 @@ public final class MySQLStmt {
 		paramBinds?[paramBindsOffset].length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
 		paramBinds?[paramBindsOffset].length.initialize(to: UInt(allocd.count-1))
 		paramBinds?[paramBindsOffset].buffer = allocd.baseAddress
-		
+
 		paramBindsOffset += 1
 	}
-	
+
 	/// create String parameter binding
 	public func bindParam(_ a: [UInt8]) {
 		guard let allocd = allocated(a) else {
@@ -453,7 +453,7 @@ public final class MySQLStmt {
 		paramBinds?[paramBindsOffset].buffer = allocd.baseAddress
 		paramBindsOffset += 1
 	}
-	
+
 	/// create String parameter binding
 	public func bindParam(_ a: [Int8]) {
 		guard let allocd = allocated(a) else {
@@ -466,7 +466,7 @@ public final class MySQLStmt {
 		paramBinds?[paramBindsOffset].buffer = allocd.baseAddress
 		paramBindsOffset += 1
 	}
-	
+
 	/// create Blob parameter binding
 	/// The memory is copied.
 	public func bindParam(_ b: UnsafePointer<Int8>, length: Int) {
@@ -478,38 +478,38 @@ public final class MySQLStmt {
 		paramBinds?[paramBindsOffset].length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
 		paramBinds?[paramBindsOffset].length.initialize(to: UInt(length))
 		paramBinds?[paramBindsOffset].buffer = allocd.baseAddress
-		
+
 		paramBindsOffset += 1
 	}
-	
+
 	/// create null parameter binding
 	public func bindParam() {
 		paramBinds?[paramBindsOffset].buffer_type = MYSQL_TYPE_NULL
 		paramBinds?[paramBindsOffset].length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
 		paramBindsOffset += 1
 	}
-	
+
 	/// manage results sets for MysqlStmt
 	public final class Results: IteratorProtocol {
 		let _UNSIGNED_FLAG = UInt32(UNSIGNED_FLAG)
 		public typealias Element = [Any?]
-		
+
 		let stmt: MySQLStmt
-		
+
 		/// Field count for result set
 		public let numFields: Int
 		/// Row count for current set
 		public var numRows: Int {
 			return Int(stmt.numRows())
 		}
-		
+
 		var meta: UnsafeMutablePointer<MYSQL_RES>? { return stmt.meta }
 		let binds: UnsafeMutablePointer<MYSQL_BIND>
-		
+
 		let lengthBuffers: UnsafeMutablePointer<UInt>
 		let isNullBuffers: UnsafeMutablePointer<my_bool>
 		private var closed = false
-		
+
 		init(_ s: MySQLStmt) {
 			stmt = s
 			numFields = Int(stmt.fieldCount())
@@ -519,14 +519,14 @@ public final class MySQLStmt {
 			mysql_stmt_store_result(stmt.ptr)
 			bind()
 		}
-		
+
 		deinit {
 			unbind()
 			binds.deallocate()
 			lengthBuffers.deallocate()
 			isNullBuffers.deallocate()
 		}
-		
+
 		public func fetchRow() -> Bool {
 			let fetchRes = mysql_stmt_fetch(stmt.ptr)
 			if fetchRes == MYSQL_NO_DATA || fetchRes == 1 {
@@ -534,19 +534,19 @@ public final class MySQLStmt {
 			}
 			return true
 		}
-		
+
 		public func currentRow() -> [Any?]? {
 			let r = (0..<numFields).map { self.valueForField($0) }
 			return r
 		}
-		
+
 		public func next() -> Element? {
 			if !fetchRow() {
 				return nil
 			}
 			return currentRow()
 		}
-		
+
 		enum GeneralType {
 			case integer(enum_field_types),
 			double(enum_field_types),
@@ -555,7 +555,7 @@ public final class MySQLStmt {
 			date(enum_field_types),
 			null
 		}
-		
+
 		func mysqlTypeToGeneralType(_ field: UnsafeMutablePointer<MYSQL_FIELD>) -> GeneralType {
 			let type = field.pointee.type
 			switch type {
@@ -592,7 +592,7 @@ public final class MySQLStmt {
 				return .string(type)
 			}
 		}
-		
+
 		func mysqlTypeToGeneralType(_ type: enum_field_types) -> GeneralType {
 			switch type {
 			case MYSQL_TYPE_NULL:
@@ -625,20 +625,20 @@ public final class MySQLStmt {
 				return .string(type)
 			}
 		}
-		
+
 		func bindField(_ field: UnsafeMutablePointer<MYSQL_FIELD>) -> MYSQL_BIND {
 			let generalType = mysqlTypeToGeneralType(field)
 			let bind = bindToType(generalType)
 			return bind
 		}
-		
+
 		func bindBuffer<T>(_ sourceBind: MYSQL_BIND, type: T) -> MYSQL_BIND {
 			var bind = sourceBind
 			bind.buffer = UnsafeMutableRawPointer(UnsafeMutablePointer<T>.allocate(capacity: 1))
 			bind.buffer_length = UInt(MemoryLayout<T>.size)
 			return bind
 		}
-		
+
 		private func valueForField(_ n: Int) -> Any? {
 			var bind = binds[n]
       		var FALSE = 0
@@ -714,7 +714,7 @@ public final class MySQLStmt {
 				return nil
 			}
 		}
-		
+
 		/// Retrieve and process each row with the provided callback
 		public func forEachRow(callback: (Element) -> ()) -> Bool {
 			while let row = next() {
@@ -722,7 +722,7 @@ public final class MySQLStmt {
 			}
 			return true
 		}
-		
+
 		func bindToType(_ type: GeneralType) -> MYSQL_BIND {
 			switch type {
 			case .double(let s):
@@ -737,31 +737,31 @@ public final class MySQLStmt {
 				return bindToNull()
 			}
 		}
-		
+
 		func bindToBlob() -> MYSQL_BIND {
 			var bind = MYSQL_BIND()
 			bind.buffer_type = MYSQL_TYPE_LONG_BLOB
 			return bind
 		}
-		
+
 		func bindToString() -> MYSQL_BIND {
 			var bind = MYSQL_BIND()
 			bind.buffer_type = MYSQL_TYPE_VAR_STRING
 			return bind
 		}
-		
+
 		func bindToNull() -> MYSQL_BIND {
 			var bind = MYSQL_BIND()
 			bind.buffer_type = MYSQL_TYPE_NULL
 			return bind
 		}
-		
+
 		func bindToIntegral(_ type: enum_field_types) -> MYSQL_BIND {
 			var bind = MYSQL_BIND()
 			bind.buffer_type = type
 			return bind
 		}
-		
+
 		private func bind() {
 			// empty buffer shared by .bytes, .string, .date, .null types
 			let scratch = UnsafeMutableRawPointer(UnsafeMutablePointer<Int8>.allocate(capacity: 0))
@@ -778,15 +778,15 @@ public final class MySQLStmt {
 				bind.length.initialize(to: 0)
 				bind.is_null = unsafeBitCast(isNullBuffers.advanced(by: i), to: type(of: bind.is_null))
         		memset(bind.is_null, 0, MemoryLayout.size(ofValue: bind.is_null.pointee))
-				
+
 				let genType = mysqlTypeToGeneralType(field)
 				switch genType {
 				case .double:
 					switch bind.buffer_type {
 					case MYSQL_TYPE_FLOAT:
-						bind = bindBuffer(bind, type: Float.self);
+						bind = bindBuffer(bind, type: Float.self)
 					case MYSQL_TYPE_DOUBLE:
-						bind = bindBuffer(bind, type: Double.self);
+						bind = bindBuffer(bind, type: Double.self)
 					default: break
 					}
 				case .integer:
@@ -794,25 +794,25 @@ public final class MySQLStmt {
 						memset(&(bind.is_unsigned), 1, MemoryLayout.size(ofValue: bind.is_unsigned))
 						switch bind.buffer_type {
 						case MYSQL_TYPE_LONGLONG:
-							bind = bindBuffer(bind, type: UInt64.self);
+							bind = bindBuffer(bind, type: UInt64.self)
 						case MYSQL_TYPE_LONG, MYSQL_TYPE_INT24:
-							bind = bindBuffer(bind, type: UInt32.self);
+							bind = bindBuffer(bind, type: UInt32.self)
 						case MYSQL_TYPE_SHORT:
-							bind = bindBuffer(bind, type: UInt16.self);
+							bind = bindBuffer(bind, type: UInt16.self)
 						case MYSQL_TYPE_TINY:
-							bind = bindBuffer(bind, type: UInt8.self);
+							bind = bindBuffer(bind, type: UInt8.self)
 						default: break
 						}
 					} else {
 						switch bind.buffer_type {
 						case MYSQL_TYPE_LONGLONG:
-							bind = bindBuffer(bind, type: Int64.self);
+							bind = bindBuffer(bind, type: Int64.self)
 						case MYSQL_TYPE_LONG, MYSQL_TYPE_INT24:
-							bind = bindBuffer(bind, type: Int32.self);
+							bind = bindBuffer(bind, type: Int32.self)
 						case MYSQL_TYPE_SHORT:
-							bind = bindBuffer(bind, type: Int16.self);
+							bind = bindBuffer(bind, type: Int16.self)
 						case MYSQL_TYPE_TINY:
-							bind = bindBuffer(bind, type: Int8.self);
+							bind = bindBuffer(bind, type: Int8.self)
 						default: break
 						}
 					}
@@ -824,7 +824,7 @@ public final class MySQLStmt {
 			}
 			mysql_stmt_bind_result(stmt.ptr, binds)
 		}
-		
+
 		private func unbind() {
 			for i in 0..<numFields {
 				let bind = binds[i]

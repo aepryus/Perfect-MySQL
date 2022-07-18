@@ -5,7 +5,7 @@
 //  Created by Kyle Jessup on 3/22/16.
 //	Copyright (C) 2016 PerfectlySoft, Inc.
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 // This source file is part of the Perfect.org open source project
 //
@@ -14,7 +14,7 @@
 //
 // See http://perfect.org/licensing.html for license information
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------===//
 //
 
 import PackageDescription
@@ -28,7 +28,7 @@ let package = Package(
 		.package(url: "https://github.com/RockfordWei/Perfect.git", from: "5.6.13")
 		],
 	targets: [
-        .systemLibrary(name: "mysqlclient", pkgConfig: "mysqlclient",     providers: [
+        .systemLibrary(name: "mysqlclient", pkgConfig: "mysqlclient", providers: [
             .apt(["libmysqlclient-dev"]),
             .brew(["mysqlclient"])
         ]),
