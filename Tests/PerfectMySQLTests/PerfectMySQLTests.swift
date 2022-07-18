@@ -1382,7 +1382,8 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+    // TODO: this script can only run separately, i.e.,
+    // swift test --filter testSelfJunctionJoin
 	func testSelfJunctionJoin() {
 		do {
 			struct Me: Codable {
@@ -1424,7 +1425,8 @@ class PerfectMySQLTests: XCTestCase {
 			XCTFail("\(error)")
 		}
 	}
-	
+    // TODO: this script can only run separately, i.e.,
+    // swift test --filter testCodableProperty
 	func testCodableProperty() {
 		do {
 			struct Sub: Codable {
