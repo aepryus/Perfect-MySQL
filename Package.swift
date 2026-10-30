@@ -25,7 +25,7 @@ let package = Package(
 		.library(name: "PerfectMySQL", targets: ["PerfectMySQL"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/RockfordWei/Perfect.git", from: "5.6.13")
+		.package(url: "https://github.com/aepryus/Perfect.git", from: "5.7.2")
 		],
 	targets: [
         .systemLibrary(name: "mysqlclient", pkgConfig: "mysqlclient", providers: [
